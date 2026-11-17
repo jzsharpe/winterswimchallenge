@@ -333,9 +333,9 @@
           <div class="desc">${esc(sw.desc || ' ')}</div>
           <div class="count"><b>${st.lengths}</b><span>lengths · ${st.dist} ${p.unit}</span></div>
           <div class="stats">
-            <div class="stat"><div class="k">Last ${sl}</div><div class="v">${fmt(st.last)}</div></div>
-            <div class="stat"><div class="k">Avg ${sl}</div><div class="v">${fmt(st.avg)}</div></div>
-            <div class="stat"><div class="k">${sw.finishedAt ? 'Total' : 'Since last'}</div><div class="v" data-since="${sw.id}">${
+            <div class="stat"><div class="k">Last ${sl.replace(/[a-z]+$/, "")}</div><div class="v">${fmt(st.last)}</div></div>
+            <div class="stat"><div class="k">Avg ${sl.replace(/[a-z]+$/, "")}</div><div class="v">${fmt(st.avg)}</div></div>
+            <div class="stat"><div class="k">${sw.finishedAt ? 'Total' : 'Since'}</div><div class="v" data-since="${sw.id}">${
               sw.finishedAt ? fmtClock(sw.finishedAt - sw.startedAt) : (sw.startedAt ? fmtClock(Date.now() - st.lastMark) : '–')
             }</div></div>
           </div>
