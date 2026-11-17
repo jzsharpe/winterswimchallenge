@@ -229,7 +229,10 @@
 <script src="config.js"></script>
 <script>
 (() => {
-  const KEY = 'swimathon-lane-v1';
+  // ?slot=2 (any short name) keeps a completely separate lane in this browser —
+  // handy for testing several lanes from one computer.
+  const SLOT = (new URLSearchParams(location.search).get('slot') || '').replace(/[^\w-]/g, '').slice(0, 20);
+  const KEY = 'swimathon-lane-v1' + (SLOT ? '-' + SLOT : '');
   const MIN_GAP_MS = 5000; // ignore a second tap on the same swimmer within 5s
 
   const COLORS = {
