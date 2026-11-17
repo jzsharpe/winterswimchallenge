@@ -205,6 +205,7 @@
     </div>
     <div class="actions">
       <button class="btn" id="shareBtn">Share results</button>
+      <button class="btn" id="csvBtn">Download spreadsheet</button>
     </div>
     <div class="actions">
       <button class="btn danger" id="resetCounts">Reset all counts</button>
@@ -514,6 +515,41 @@
     } catch (e) { if (e.name === 'AbortError') return; }
     try { await navigator.clipboard.writeText(text); toast('Results copied — paste into a text'); }
     catch (e) { prompt('Copy these results:', text); }
+  };
+
+  // Spreadsheet (CSV) — one row per swimmer, splits in seconds as columns.
+  $('csvBtn').onclick = () => {
+    const p = pool(), sl = splitLabel();
+    const sec = ms => ms == null ? '' : (Math.round(ms / 100) / 10).toFixed(1);
+    const clock = t => t ? new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' }) : '';
+    const maxSplits = Math.max(0, ...state.swimmers.map(s => s.taps.length));
+    const header = ['Lane', 'Swimmer', 'Description', 'Lengths', `Distance (${p.unit})`, 'Start time',
+      'Total time (sec)', `Avg ${sl} (sec)`, `Avg ${sl}`, `Fastest ${sl} (sec)`, `Slowest ${sl} (sec)`];
+    for (let i = 1; i <= maxSplits; i++) header.push(`${sl} split ${i} (sec)`);
+    const rows = [header];
+    for (const sw of state.swimmers) {
+      const st = stats(sw);
+      const splits = sw.taps.map((t, i) => t - (i ? sw.taps[i - 1] : sw.startedAt));
+      rows.push([
+        state.lane, sw.name, sw.desc, st.lengths, st.dist, clock(sw.startedAt),
+        st.n ? sec(st.lastMark - sw.startedAt) : '', sec(st.avg), st.avg == null ? '' : fmt(st.avg),
+        splits.length ? sec(Math.min(...splits)) : '', splits.length ? sec(Math.max(...splits)) : '',
+        ...splits.map(sec)
+      ]);
+    }
+    const total = state.swimmers.reduce((a, s) => a + s.taps.length * 2 * p.len, 0);
+    rows.push([]);
+    rows.push([state.lane, 'Lane total', '', state.swimmers.reduce((a, s) => a + s.taps.length * 2, 0), total]);
+    const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
+    const d = new Date(), ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const name = `swimathon-${state.lane ? 'lane-' + state.lane.replace(/[^\w-]+/g, '') : 'results'}-${ymd}.csv`;
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    toast('Spreadsheet downloaded');
   };
 
   // ---------- Sheet plumbing ----------
