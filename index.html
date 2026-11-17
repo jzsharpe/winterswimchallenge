@@ -58,6 +58,13 @@
     border-radius: 10px; padding: 8px 12px; font-size: 15px; font-weight: 600;
   }
 
+  .sync { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 5px; opacity: .9; white-space: nowrap; }
+  .sync::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: #9aa; }
+  .sync.ok::before { background: #3ddc84; }
+  .sync.pending::before { background: #ffc107; }
+  .sync.err::before { background: #ff6b5b; }
+  .sync[hidden] { display: none; }
+
   main { padding: 12px 12px 0; max-width: 720px; margin: 0 auto; }
 
   .empty {
@@ -158,6 +165,7 @@
 
 <header>
   <h1 id="title">Lap Counter</h1>
+  <span class="sync" id="syncDot" hidden title="Scoreboard sync"></span>
   <button class="hbtn" id="menuBtn" aria-label="Lane settings">Lane ⚙︎</button>
 </header>
 
@@ -212,11 +220,13 @@
       <button class="btn danger" id="resetAll">Clear lane</button>
     </div>
     <p class="hint">Everything is saved on this phone, so it's safe to lock the screen or refresh the page.</p>
+    <p class="hint" id="scoreHint" hidden>Counts are also sent to the <a id="scoreLink" href="scoreboard.html" target="_blank" style="color:var(--accent)">team scoreboard</a> whenever this phone has signal. If it loses signal, it keeps counting and catches up later.</p>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
+<script src="config.js"></script>
 <script>
 (() => {
   const KEY = 'swimathon-lane-v1';
@@ -243,7 +253,60 @@
   }
   function save() {
     try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+    scheduleSync();
   }
+
+  // ---------- Scoreboard sync (Firebase Realtime Database REST API) ----------
+  // Each phone writes its whole lane to /events/{event}/lanes/{deviceId} after every change.
+  const CFG = window.SWIM_CONFIG || {};
+  const DB = (CFG.databaseURL || '').replace(/\/+$/, '');
+  const EVENT = String(CFG.event || 'swimathon').replace(/[^\w-]/g, '-');
+  if (!state.deviceId) {
+    state.deviceId = 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+  let syncTimer = null, syncing = false, syncAgain = false;
+  function setSync(cls, label) {
+    const el = $('syncDot');
+    el.hidden = false; el.className = 'sync ' + cls; el.textContent = label;
+  }
+  function scheduleSync(delay = 400) {
+    if (!DB) return;
+    setSync('pending', 'Sending');
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(pushSync, delay);
+  }
+  async function pushSync() {
+    if (syncing) { syncAgain = true; return; }
+    syncing = true;
+    const p = pool();
+    const body = {
+      lane: state.lane || '?', pool: state.pool, unit: p.unit, updatedAt: Date.now(),
+      swimmers: state.swimmers.map(sw => {
+        const st = stats(sw);
+        return {
+          name: sw.name.slice(0, 60), desc: (sw.desc || '').slice(0, 80),
+          lengths: st.lengths, dist: st.dist,
+          avgMs: st.avg == null ? null : Math.round(st.avg),
+          lastMs: st.last == null ? null : Math.round(st.last),
+          startedAt: sw.startedAt || null, finishedAt: sw.finishedAt || null, lastTap: st.n ? sw.taps[st.n - 1] : null
+        };
+      })
+    };
+    try {
+      const r = await fetch(`${DB}/events/${EVENT}/lanes/${state.deviceId}.json`, { method: 'PUT', body: JSON.stringify(body) });
+      if (!r.ok) throw new Error(r.status);
+      setSync('ok', 'Live');
+    } catch (e) {
+      setSync('err', 'Offline');
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(pushSync, 5000);
+    } finally {
+      syncing = false;
+      if (syncAgain) { syncAgain = false; scheduleSync(0); }
+    }
+  }
+  window.addEventListener('online', () => scheduleSync(0));
 
   const $ = id => document.getElementById(id);
   const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -479,6 +542,7 @@
   function openLane() {
     $('laneName').value = state.lane;
     $('poolLen').value = state.pool;
+    $('scoreHint').hidden = !DB;
     $('laneSheet').classList.add('open');
   }
   $('menuBtn').onclick = openLane;
@@ -585,6 +649,7 @@
   });
 
   render();
+  scheduleSync(0);
 })();
 </script>
 </body>

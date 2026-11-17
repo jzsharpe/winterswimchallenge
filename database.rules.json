@@ -1,0 +1,22 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "events": {
+      "$event": {
+        ".read": "$event.length <= 40",
+        "lanes": {
+          "$device": {
+            ".write": "$device.length <= 40",
+            ".validate": "!newData.exists() || (newData.hasChildren(['lane', 'updatedAt']) && newData.child('lane').isString() && newData.child('lane').val().length <= 20 && newData.child('updatedAt').isNumber())",
+            "swimmers": {
+              "$i": {
+                ".validate": "$i.matches(/^[0-9]{1,2}$/) && newData.child('name').isString() && newData.child('name').val().length <= 60 && newData.child('lengths').isNumber()"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

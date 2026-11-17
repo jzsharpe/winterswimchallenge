@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b3d5c">
+<title>Swimathon Scoreboard</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root {
+    --bg: #071a26; --panel: #0e2a3b; --line: #1d4258; --ink: #eef6fb; --muted: #8fb0c3;
+    --accent: #5cc4f2; --gold: #ffc94a; --go: #3ddc84;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font: 16px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px 16px 32px; }
+  .wrap { max-width: 1600px; margin: 0 auto; }
+
+  .top {
+    display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: end;
+    border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 16px;
+  }
+  h1 { margin: 0; font-size: clamp(22px, 3.2vw, 40px); }
+  .sub { color: var(--muted); font-size: clamp(13px, 1.4vw, 17px); margin-top: 4px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; }
+  .live::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: #9aa; }
+  .live.on::before { background: var(--go); box-shadow: 0 0 0 0 rgba(61,220,132,.6); animation: pulse 2s infinite; }
+  .live.off::before { background: #ff6b5b; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(61,220,132,.6); } 70% { box-shadow: 0 0 0 8px rgba(61,220,132,0); } 100% { box-shadow: 0 0 0 0 rgba(61,220,132,0); } }
+  .total { text-align: right; }
+  .total .big { font-size: clamp(36px, 6.5vw, 84px); font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--accent); }
+  .total .big small { font-size: .4em; color: var(--muted); font-weight: 600; margin-left: 4px; }
+  .total .meta { color: var(--muted); font-size: clamp(13px, 1.4vw, 17px); margin-top: 4px; }
+
+  .layout { display: grid; grid-template-columns: 1fr 320px; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } .leaders { order: -1; } }
+
+  .lanes { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .lane, .leaders { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .lane h2 {
+    margin: 0; padding: 10px 14px; font-size: 20px; display: flex; justify-content: space-between; align-items: baseline;
+    background: rgba(255,255,255,.04); border-bottom: 1px solid var(--line);
+  }
+  .lane h2 span { font-size: 15px; color: var(--muted); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row {
+    display: grid; grid-template-columns: 14px 1fr auto; gap: 4px 10px; align-items: center;
+    padding: 9px 14px; border-bottom: 1px solid var(--line);
+  }
+  .row:last-child { border-bottom: 0; }
+  .chip { width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); }
+  .nm { font-weight: 700; font-size: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nm small { display: block; font-weight: 400; font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .len { text-align: right; font-variant-numeric: tabular-nums; }
+  .len b { font-size: 28px; line-height: 1; }
+  .len small { display: block; font-size: 12px; color: var(--muted); }
+  .row.done .nm::after { content: ' ✓'; color: var(--go); }
+  .row.bump { animation: bump 1.2s ease-out; }
+  @keyframes bump { from { background: rgba(92,196,242,.35); } to { background: transparent; } }
+  .stale { font-size: 12px; color: #ff9a8b; padding: 6px 14px; }
+
+  .leaders h2 { margin: 0; padding: 10px 14px; font-size: 18px; border-bottom: 1px solid var(--line); background: rgba(255,201,74,.08); color: var(--gold); }
+  .leaders ol { margin: 0; padding: 0; list-style: none; }
+  .leaders li { display: grid; grid-template-columns: 26px 1fr auto; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--line); align-items: center; }
+  .leaders li:last-child { border-bottom: 0; }
+  .leaders .rk { font-weight: 800; color: var(--gold); font-size: 18px; }
+  .leaders .nm { font-size: 16px; }
+  .leaders .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  .empty { text-align: center; color: var(--muted); padding: 60px 16px; font-size: 18px; }
+  .empty code { background: var(--panel); padding: 2px 6px; border-radius: 6px; }
+  .fs { background: none; border: 1px solid var(--line); color: var(--muted); border-radius: 8px; padding: 3px 9px; font: inherit; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div>
+      <h1>🏊 Swimathon Scoreboard</h1>
+      <div class="sub"><span class="live" id="live">Connecting…</span><span id="updated"></span>
+        <button class="fs" id="fsBtn">Full screen</button></div>
+    </div>
+    <div class="total">
+      <div class="big" id="total">0</div>
+      <div class="meta" id="meta"></div>
+    </div>
+  </div>
+  <div id="body"></div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(() => {
+  const CFG = window.SWIM_CONFIG || {};
+  const DB = (CFG.databaseURL || '').replace(/\/+$/, '');
+  const params = new URLSearchParams(location.search);
+  const EVENT = String(params.get('event') || CFG.event || 'swimathon').replace(/[^\w-]/g, '-');
+  const STALE_HIDE_MS = 12 * 3600 * 1000; // hide lanes not updated in 12 hours (old test data)
+  const STALE_WARN_MS = 5 * 60 * 1000;    // flag lanes quiet for 5+ minutes (phone offline?)
+
+  const COLORS = {
+    purple:'#a55ad1', violet:'#a55ad1', lavender:'#b39ddb', pink:'#ec6aa8', magenta:'#d6249f',
+    red:'#e53935', maroon:'#9b2a3a', orange:'#f57c00', yellow:'#fbc02d', gold:'#d4a017',
+    green:'#2e9e4f', lime:'#9ccc3c', teal:'#14a3a3', turquoise:'#1fc7c1', aqua:'#2fd3e0',
+    blue:'#1e6fd9', navy:'#2b3f9b', 'light blue':'#64b5f6', 'baby blue':'#90caf9', 'sky blue':'#64b5f6',
+    black:'#222', white:'#f5f5f5', grey:'#9e9e9e', gray:'#9e9e9e', silver:'#c0c0c0',
+    brown:'#795548', tan:'#d2b48c'
+  };
+  const colorKeys = Object.keys(COLORS).sort((a, b) => b.length - a.length);
+  const colorFor = d => { d = (d || '').toLowerCase(); for (const k of colorKeys) if (new RegExp(`\\b${k}\\b`).test(d)) return COLORS[k]; return null; };
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const $ = id => document.getElementById(id);
+  const fmt = ms => {
+    if (ms == null) return '–';
+    const t = Math.round(ms / 100), s = Math.floor(t / 10);
+    return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}.${t % 10}`;
+  };
+  const ago = ms => { const s = Math.round(ms / 1000); return s < 60 ? `${s}s ago` : s < 3600 ? `${Math.round(s / 60)} min ago` : `${Math.round(s / 3600)} hr ago`; };
+
+  let data = {};          // { lanes: { deviceId: {...} } }
+  let prevLengths = {};   // for highlight on change
+  let lastMsg = 0;
+
+  if (!DB) {
+    $('live').textContent = 'Not set up';
+    $('body').innerHTML = `<div class="empty">The scoreboard isn't connected yet — add the database URL in <code>config.js</code>.</div>`;
+    return;
+  }
+
+  // ---- Live stream from Firebase Realtime Database (Server-Sent Events) ----
+  function setAt(path, value, merge) {
+    const parts = path.split('/').filter(Boolean);
+    if (!parts.length) { data = merge ? Object.assign({}, data, value) : (value || {}); return; }
+    let node = data;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (typeof node[parts[i]] !== 'object' || node[parts[i]] === null) node[parts[i]] = {};
+      node = node[parts[i]];
+    }
+    const k = parts[parts.length - 1];
+    if (merge) node[k] = Object.assign({}, node[k], value);
+    else if (value === null) delete node[k];
+    else node[k] = value;
+  }
+  function connect() {
+    const es = new EventSource(`${DB}/events/${EVENT}.json`);
+    const handle = merge => e => {
+      const msg = JSON.parse(e.data);
+      if (merge) for (const [k, v] of Object.entries(msg.data || {})) setAt(msg.path + '/' + k, v, false);
+      else setAt(msg.path, msg.data, false);
+      lastMsg = Date.now(); live(true); render();
+    };
+    es.addEventListener('put', handle(false));
+    es.addEventListener('patch', handle(true));
+    es.addEventListener('keep-alive', () => { lastMsg = Date.now(); live(true); });
+    es.onerror = () => live(false);
+    es.addEventListener('cancel', () => { live(false); es.close(); setTimeout(connect, 5000); });
+    es.addEventListener('auth_revoked', () => { es.close(); setTimeout(connect, 2000); });
+  }
+  function live(on) {
+    const el = $('live');
+    el.className = 'live ' + (on ? 'on' : 'off');
+    el.textContent = on ? 'Live' : 'Reconnecting…';
+  }
+
+  // ---- Render ----
+  function render() {
+    const now = Date.now();
+    const lanes = Object.entries(data.lanes || {})
+      .map(([id, l]) => ({ id, ...l, swimmers: Object.values(l.swimmers || {}) }))
+      .filter(l => l.swimmers.length && now - (l.updatedAt || 0) < STALE_HIDE_MS)
+      .sort((a, b) => String(a.lane).localeCompare(String(b.lane), undefined, { numeric: true }));
+
+    const totals = {}; let lengths = 0, swimmers = 0;
+    const all = [];
+    for (const l of lanes) for (const s of l.swimmers) {
+      totals[l.unit || 'yd'] = (totals[l.unit || 'yd'] || 0) + (s.dist || 0);
+      lengths += s.lengths || 0; swimmers++;
+      all.push({ ...s, lane: l.lane, unit: l.unit || 'yd' });
+    }
+    const units = Object.keys(totals);
+    $('total').innerHTML = units.length
+      ? units.map(u => `${totals[u].toLocaleString()}<small>${u === 'm' ? 'meters' : 'yards'}</small>`).join(' + ')
+      : `0<small>yards</small>`;
+    $('meta').textContent = `${lengths.toLocaleString()} lengths · ${swimmers} swimmer${swimmers === 1 ? '' : 's'} · ${lanes.length} lane${lanes.length === 1 ? '' : 's'}`;
+
+    if (!lanes.length) {
+      $('body').innerHTML = `<div class="empty">Waiting for lanes… Counts show up here as soon as lane counters start adding swimmers.</div>`;
+      return;
+    }
+
+    const leaders = all.filter(s => s.lengths > 0).sort((a, b) => b.lengths - a.lengths).slice(0, 8);
+    const changed = new Set();
+    for (const l of lanes) l.swimmers.forEach((s, i) => {
+      const k = `${l.id}/${i}/${s.name}`;
+      if (prevLengths[k] != null && prevLengths[k] !== s.lengths) changed.add(k);
+      prevLengths[k] = s.lengths;
+    });
+
+    const laneHtml = lanes.map(l => {
+      const ldist = l.swimmers.reduce((a, s) => a + (s.dist || 0), 0);
+      const quiet = now - (l.updatedAt || 0) > STALE_WARN_MS && l.swimmers.some(s => s.startedAt && !s.finishedAt);
+      const rows = l.swimmers.slice().map((s, i) => ({ s, i })).sort((a, b) => b.s.lengths - a.s.lengths).map(({ s, i }) => {
+        const c = colorFor(s.desc);
+        const k = `${l.id}/${i}/${s.name}`;
+        return `<div class="row ${s.finishedAt ? 'done' : ''} ${changed.has(k) ? 'bump' : ''}">
+          <span class="chip" style="background:${c || 'transparent'}"></span>
+          <div class="nm">${esc(s.name)}<small>${s.avgMs ? 'avg 50 ' + fmt(s.avgMs) : (s.startedAt ? 'swimming' : 'not started')}${s.desc ? ' · ' + esc(s.desc) : ''}</small></div>
+          <div class="len"><b>${s.lengths}</b><small>${s.dist} ${esc(l.unit || 'yd')}</small></div>
+        </div>`;
+      }).join('');
+      return `<section class="lane">
+        <h2>Lane ${esc(l.lane)} <span>${ldist.toLocaleString()} ${esc(l.unit || 'yd')}</span></h2>
+        ${rows}
+        ${quiet ? `<div class="stale">No update for ${ago(now - l.updatedAt)} — counter's phone may be offline</div>` : ''}
+      </section>`;
+    }).join('');
+
+    const leaderHtml = leaders.length ? `<aside class="leaders"><h2>★ Most lengths</h2><ol>${
+      leaders.map((s, i) => `<li><span class="rk">${i + 1}</span><span class="nm">${esc(s.name)}<small>Lane ${esc(s.lane)}</small></span><span class="v">${s.lengths}</span></li>`).join('')
+    }</ol></aside>` : '';
+
+    $('body').innerHTML = `<div class="layout"><div class="lanes">${laneHtml}</div>${leaderHtml}</div>`;
+    $('updated').textContent = '';
+  }
+
+  setInterval(() => {
+    if (lastMsg && Date.now() - lastMsg > 70000) live(false); // Firebase sends keep-alives every ~30s
+    render();
+  }, 15000);
+
+  $('fsBtn').onclick = () => {
+    const d = document.documentElement;
+    (document.fullscreenElement ? document.exitFullscreen() : (d.requestFullscreen || d.webkitRequestFullscreen).call(d)).catch?.(() => {});
+  };
+
+  connect();
+})();
+</script>
+</body>
+</html>
