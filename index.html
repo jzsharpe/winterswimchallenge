@@ -6,8 +6,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Lap Counter">
-<meta name="theme-color" content="#0b3d5c">
-<title>Swimathon Lap Counter</title>
+<meta name="theme-color" content="#231f20">
+<title>Winter Swim Challenge Lap Counter</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -15,24 +15,24 @@
   :root {
     --bg: #eef4f8;
     --card: #ffffff;
-    --ink: #10212c;
-    --muted: #5b6f7c;
-    --line: #d5e1e8;
-    --brand: #0b3d5c;
-    --accent: #0a84c6;
+    --ink: #1a1a1c;
+    --muted: #63666c;
+    --line: #dcdde0;
+    --brand: #231f20;
+    --accent: #d6001c;
     --accent-ink: #ffffff;
     --go: #1a9e5c;
     --warn: #c0392b;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #0b141a;
-      --card: #15222b;
-      --ink: #eaf2f7;
-      --muted: #93a8b6;
-      --line: #263845;
-      --brand: #0b3d5c;
-      --accent: #1e9be0;
+      --bg: #111214;
+      --card: #1c1d21;
+      --ink: #f2f2f3;
+      --muted: #a0a4ab;
+      --line: #2e3036;
+      --brand: #000000;
+      --accent: #e3132f;
     }
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -71,6 +71,8 @@
     text-align: center; color: var(--muted); padding: 40px 16px;
   }
   .empty p { margin: 0 0 16px; }
+  .logo-plate { background: #fff; border-radius: 16px; padding: 10px 14px; max-width: 320px; margin: 0 auto 20px; }
+  .logo-plate img { width: 100%; height: auto; display: block; }
 
   .card {
     background: var(--card); border: 1px solid var(--line); border-radius: 16px;
@@ -367,7 +369,7 @@
     if (!state.swimmers.length) {
       main.innerHTML = `
         <div class="empty">
-          <p style="font-size:44px;margin-bottom:8px">🏊</p>
+          <div class="logo-plate"><img src="team-logo.png" alt="Cambridge Artistic Swimming"></div>
           <p><b>Set up your lane</b><br>Add each swimmer you're counting. Tap <b>+</b> every time they touch the wall at your end — that's 2 lengths (${splitLabel()}).</p>
           <div class="actions" style="max-width:340px;margin:0 auto">
             <button class="btn primary" id="addFirst">Add a swimmer</button>
@@ -569,7 +571,7 @@
 
   $('shareBtn').onclick = async () => {
     const p = pool(), sl = splitLabel();
-    const lines = [`Swimathon — ${state.lane ? 'Lane ' + state.lane : 'Lap count'} (${p.len}${p.unit} pool)`];
+    const lines = [`Winter Swim Challenge — ${state.lane ? 'Lane ' + state.lane : 'Lap count'} (${p.len}${p.unit} pool)`];
     for (const sw of state.swimmers) {
       const st = stats(sw);
       lines.push(`${sw.name}${sw.desc ? ' (' + sw.desc + ')' : ''}: ${st.lengths} lengths = ${st.dist} ${p.unit}${st.avg ? `, avg ${sl} ${fmt(st.avg)}` : ''}`);
@@ -610,7 +612,7 @@
     const cell = v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
     const csv = '﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n');
     const d = new Date(), ymd = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    const name = `swimathon-${state.lane ? 'lane-' + state.lane.replace(/[^\w-]+/g, '') : 'results'}-${ymd}.csv`;
+    const name = `winter-swim-challenge-${state.lane ? 'lane-' + state.lane.replace(/[^\w-]+/g, '') : 'results'}-${ymd}.csv`;
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a');
     a.href = url; a.download = name;

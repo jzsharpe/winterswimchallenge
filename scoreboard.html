@@ -3,15 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0b3d5c">
-<title>Swimathon Scoreboard</title>
+<meta name="theme-color" content="#231f20">
+<title>Winter Swim Challenge Scoreboard</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
   :root {
-    --bg: #071a26; --panel: #0e2a3b; --line: #1d4258; --ink: #eef6fb; --muted: #8fb0c3;
-    --accent: #5cc4f2; --gold: #ffc94a; --go: #3ddc84;
+    --bg: #0f0f11; --panel: #1b1c20; --line: #2e3036; --ink: #f4f4f5; --muted: #a3a6ad;
+    --accent: #ff2d45; --gold: #ffc94a; --go: #3ddc84;
   }
+  .brand { display: flex; align-items: center; gap: 16px; }
+  .brand .plate { background: #fff; border-radius: 12px; padding: 6px 10px; flex: none; }
+  .brand .plate img { height: clamp(48px, 7vw, 92px); width: auto; display: block; }
+  @media (max-width: 600px) { .top { grid-template-columns: 1fr; } .total { text-align: left; } }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: var(--bg); color: var(--ink); }
   body { font: 16px/1.3 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px 16px 32px; }
@@ -75,10 +79,13 @@
 <body>
 <div class="wrap">
   <div class="top">
-    <div>
-      <h1>🏊 Swimathon Scoreboard</h1>
-      <div class="sub"><span class="live" id="live">Connecting…</span><span id="updated"></span>
-        <button class="fs" id="fsBtn">Full screen</button></div>
+    <div class="brand">
+      <div class="plate"><img src="team-logo.png" alt="Cambridge Artistic Swimming"></div>
+      <div>
+        <h1>Winter Swim Challenge</h1>
+        <div class="sub"><span class="live" id="live">Connecting…</span><span id="updated"></span>
+          <button class="fs" id="fsBtn">Full screen</button></div>
+      </div>
     </div>
     <div class="total">
       <div class="big" id="total">0</div>

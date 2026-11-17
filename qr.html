@@ -6,7 +6,7 @@
 <title>Lap Counter QR Code</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <style>
-  :root { --brand: #0b3d5c; --muted: #5b6f7c; }
+  :root { --brand: #231f20; --muted: #5b6f7c; }
   * { box-sizing: border-box; }
   html, body { margin: 0; background: #fff; color: #10212c; }
   body { font: 18px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px 16px; }
@@ -28,7 +28,8 @@
 </head>
 <body>
 <div class="sign">
-  <h1>🏊 Lane Counters</h1>
+  <img src="team-logo.png" alt="Cambridge Artistic Swimming" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto 8px">
+  <h1>Winter Swim Challenge<br>Lane Counters</h1>
   <p class="lead">Scan with your phone camera to start counting laps</p>
   <div id="qr"></div>
   <div class="url" id="url"></div>
@@ -43,7 +44,7 @@
     <a id="dl" download="lane-counter-qr.png" href="#">Download QR image</a>
   </div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js" integrity="sha384-mZT2gIty7ZDdOGkxfP6joZcYdMW1Jvj9dRlfpTmaJAKKXTqzygtB22k7FLe+KZC1" crossorigin="anonymous"></script>
 <script>
   const target = new URL('./', location.href).href; // the lane counter app
   document.getElementById('url').textContent = target.replace(/^https:\/\//, '');
@@ -52,10 +53,10 @@
   let path = '';
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) path += `M${c + quiet},${r + quiet}h1v1h-1z`;
   document.getElementById('qr').innerHTML =
-    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path d="${path}" fill="#0b3d5c"/></svg>`;
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path d="${path}" fill="#231f20"/></svg>`;
   // PNG download
   const px = 24, cv = document.createElement('canvas'); cv.width = cv.height = size * px;
-  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#0b3d5c';
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#231f20';
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect((c + quiet) * px, (r + quiet) * px, px, px);
   document.getElementById('dl').href = cv.toDataURL('image/png');
 </script>
