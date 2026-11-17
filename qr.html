@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lap Counter QR Code</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+  :root { --brand: #0b3d5c; --muted: #5b6f7c; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #fff; color: #10212c; }
+  body { font: 18px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 24px 16px; }
+  .sign { max-width: 640px; margin: 0 auto; text-align: center; }
+  h1 { font-size: 40px; margin: 0 0 4px; color: var(--brand); }
+  .lead { font-size: 22px; margin: 0 0 20px; color: var(--muted); }
+  #qr svg { width: 100%; max-width: 440px; height: auto; display: block; margin: 0 auto; }
+  .url { font-size: 20px; font-weight: 700; margin: 14px 0 22px; word-break: break-all; color: var(--brand); }
+  ol { text-align: left; max-width: 460px; margin: 0 auto; padding-left: 1.3em; font-size: 18px; }
+  ol li { margin-bottom: 6px; }
+  .tools { margin: 28px auto 0; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .tools button, .tools a {
+    font: inherit; font-size: 16px; font-weight: 600; padding: 10px 16px; border-radius: 10px;
+    border: 1px solid #c8d6df; background: #fff; color: var(--brand); text-decoration: none; cursor: pointer;
+  }
+  .tools .primary { background: var(--brand); color: #fff; border-color: var(--brand); }
+  @media print { .tools { display: none; } body { padding: 0; } h1 { font-size: 48px; } }
+</style>
+</head>
+<body>
+<div class="sign">
+  <h1>🏊 Lane Counters</h1>
+  <p class="lead">Scan with your phone camera to start counting laps</p>
+  <div id="qr"></div>
+  <div class="url" id="url"></div>
+  <ol>
+    <li>Tap <b>Lane ⚙︎</b> and enter your lane number.</li>
+    <li>Add each swimmer: name + how to spot them ("purple cap").</li>
+    <li>Tap <b>Start</b> when they push off.</li>
+    <li>Tap <b>+</b> every time they touch the wall at your end.</li>
+  </ol>
+  <div class="tools">
+    <button class="primary" onclick="print()">Print</button>
+    <a id="dl" download="lane-counter-qr.png" href="#">Download QR image</a>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script>
+  const target = new URL('./', location.href).href; // the lane counter app
+  document.getElementById('url').textContent = target.replace(/^https:\/\//, '');
+  const qr = qrcode(0, 'H'); qr.addData(target); qr.make();
+  const n = qr.getModuleCount(), quiet = 3, size = n + quiet * 2;
+  let path = '';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) path += `M${c + quiet},${r + quiet}h1v1h-1z`;
+  document.getElementById('qr').innerHTML =
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges"><rect width="${size}" height="${size}" fill="#fff"/><path d="${path}" fill="#0b3d5c"/></svg>`;
+  // PNG download
+  const px = 24, cv = document.createElement('canvas'); cv.width = cv.height = size * px;
+  const g = cv.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, cv.width, cv.height); g.fillStyle = '#0b3d5c';
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (qr.isDark(r, c)) g.fillRect((c + quiet) * px, (r + quiet) * px, px, px);
+  document.getElementById('dl').href = cv.toDataURL('image/png');
+</script>
+</body>
+</html>
