@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lap Counter">
+<meta name="theme-color" content="#0b3d5c">
+<title>Swimathon Lap Counter</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+  :root {
+    --bg: #eef4f8;
+    --card: #ffffff;
+    --ink: #10212c;
+    --muted: #5b6f7c;
+    --line: #d5e1e8;
+    --brand: #0b3d5c;
+    --accent: #0a84c6;
+    --accent-ink: #ffffff;
+    --go: #1a9e5c;
+    --warn: #c0392b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b141a;
+      --card: #15222b;
+      --ink: #eaf2f7;
+      --muted: #93a8b6;
+      --line: #263845;
+      --brand: #0b3d5c;
+      --accent: #1e9be0;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 16px/1.35 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    -webkit-user-select: none; user-select: none;
+  }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  input, select { font: inherit; -webkit-user-select: text; user-select: text; }
+
+  header {
+    position: sticky; top: 0; z-index: 5;
+    background: var(--brand); color: #fff;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  header h1 { font-size: 20px; margin: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  header h1 small { font-weight: 400; opacity: .75; font-size: 14px; margin-left: 6px; }
+  .hbtn {
+    background: rgba(255,255,255,.14); border: 0; color: #fff;
+    border-radius: 10px; padding: 8px 12px; font-size: 15px; font-weight: 600;
+  }
+
+  main { padding: 12px 12px 0; max-width: 720px; margin: 0 auto; }
+
+  .empty {
+    text-align: center; color: var(--muted); padding: 40px 16px;
+  }
+  .empty p { margin: 0 0 16px; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    display: grid; grid-template-columns: 1fr 112px; overflow: hidden;
+    margin-bottom: 10px; min-height: 128px;
+  }
+  .card.done { opacity: .6; }
+  .info { padding: 12px 12px 10px 14px; min-width: 0; display: flex; flex-direction: column; }
+  .who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .chip { width: 18px; height: 18px; border-radius: 50%; flex: none; border: 2px solid rgba(0,0,0,.15); }
+  .name { font-weight: 700; font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .desc { color: var(--muted); font-size: 14px; margin: 1px 0 6px 26px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .count { display: flex; align-items: baseline; gap: 6px; margin-left: 26px; }
+  .count b { font-size: 34px; line-height: 1; font-variant-numeric: tabular-nums; }
+  .count span { color: var(--muted); font-size: 14px; }
+  .stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    margin-top: auto; padding-top: 8px; padding-left: 26px;
+  }
+  .stat .k { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .stat .v { font-size: 16px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row-tools { display: flex; gap: 6px; margin: 8px 0 0 26px; }
+  .tool {
+    background: transparent; border: 1px solid var(--line); border-radius: 8px;
+    padding: 4px 10px; font-size: 13px; color: var(--muted);
+  }
+
+  .big {
+    border: 0; background: var(--accent); color: var(--accent-ink);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-weight: 800; touch-action: manipulation;
+  }
+  .big .plus { font-size: 56px; line-height: 1; }
+  .big .lbl { font-size: 13px; font-weight: 600; opacity: .9; margin-top: 2px; }
+  .big.start { background: var(--go); }
+  .big.start .plus { font-size: 26px; }
+  .big.finished { background: var(--line); color: var(--muted); }
+  .big.finished .plus { font-size: 22px; }
+  .big:active { filter: brightness(.85); }
+  .big.flash { animation: flash .35s ease-out; }
+  @keyframes flash { from { filter: brightness(1.6); } to { filter: none; } }
+
+  .actions { display: flex; gap: 8px; margin: 14px 0 6px; flex-wrap: wrap; }
+  .btn {
+    border: 1px solid var(--line); background: var(--card); border-radius: 12px;
+    padding: 12px 14px; font-weight: 600; flex: 1 1 auto;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.go { background: var(--go); border-color: var(--go); color: #fff; }
+  .btn.danger { color: var(--warn); }
+
+  .total { text-align: center; color: var(--muted); font-size: 14px; margin: 8px 0 0; }
+
+  /* Sheets */
+  .sheet-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 20;
+    display: none; align-items: flex-end; justify-content: center;
+  }
+  .sheet-bg.open { display: flex; }
+  .sheet {
+    background: var(--card); width: 100%; max-width: 560px; max-height: 88vh; overflow: auto;
+    border-radius: 18px 18px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+  .sheet h2 { margin: 0 0 12px; font-size: 20px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+  .field input, .field select {
+    width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: var(--bg); color: var(--ink); font-size: 17px;
+  }
+  .hint { font-size: 13px; color: var(--muted); margin: -4px 0 12px; }
+  .splits { font-variant-numeric: tabular-nums; font-size: 14px; columns: 2; margin: 0 0 12px; padding: 0; list-style: none; }
+  .splits li { padding: 2px 0; border-bottom: 1px dashed var(--line); break-inside: avoid; }
+  .splits li span { color: var(--muted); display: inline-block; width: 3.2em; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom));
+    transform: translateX(-50%) translateY(120px);
+    background: #10212c; color: #fff; padding: 10px 16px; border-radius: 12px; z-index: 30;
+    font-size: 15px; transition: transform .2s; max-width: calc(100% - 32px); text-align: center;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast button { background: none; border: 0; color: #7cc8f5; font-weight: 700; margin-left: 10px; }
+
+  @media (max-width: 360px) {
+    .card { grid-template-columns: 1fr 92px; }
+    .big .plus { font-size: 46px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1 id="title">Lap Counter</h1>
+  <button class="hbtn" id="menuBtn" aria-label="Lane settings">Lane ⚙︎</button>
+</header>
+
+<main id="main"></main>
+
+<!-- Add / edit swimmer -->
+<div class="sheet-bg" id="swimmerSheet">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="swTitle">
+    <h2 id="swTitle">Add swimmer</h2>
+    <div class="field">
+      <label for="swName">Name</label>
+      <input id="swName" autocomplete="off" autocapitalize="words" placeholder="e.g. Ava">
+    </div>
+    <div class="field">
+      <label for="swDesc">How to spot them</label>
+      <input id="swDesc" autocomplete="off" placeholder="e.g. purple cap">
+    </div>
+    <p class="hint">Mention a color ("purple cap") and it shows as a dot next to their name.</p>
+    <div id="swExtra"></div>
+    <div class="actions">
+      <button class="btn" data-close>Cancel</button>
+      <button class="btn primary" id="swSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Lane settings -->
+<div class="sheet-bg" id="laneSheet">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="laneTitle">
+    <h2 id="laneTitle">Lane settings</h2>
+    <div class="field">
+      <label for="laneName">Lane</label>
+      <input id="laneName" autocomplete="off" inputmode="text" placeholder="e.g. 3">
+    </div>
+    <div class="field">
+      <label for="poolLen">Pool</label>
+      <select id="poolLen">
+        <option value="25yd">25 yards</option>
+        <option value="25m">25 meters</option>
+        <option value="50m">50 meters</option>
+      </select>
+    </div>
+    <div class="actions">
+      <button class="btn primary" id="laneSave">Done</button>
+    </div>
+    <div class="actions">
+      <button class="btn" id="shareBtn">Share results</button>
+    </div>
+    <div class="actions">
+      <button class="btn danger" id="resetCounts">Reset all counts</button>
+      <button class="btn danger" id="resetAll">Clear lane</button>
+    </div>
+    <p class="hint">Everything is saved on this phone, so it's safe to lock the screen or refresh the page.</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(() => {
+  const KEY = 'swimathon-lane-v1';
+  const MIN_GAP_MS = 5000; // ignore a second tap on the same swimmer within 5s
+
+  const COLORS = {
+    purple:'#8e44ad', violet:'#8e44ad', lavender:'#b39ddb', pink:'#ec6aa8', magenta:'#d6249f',
+    red:'#e53935', maroon:'#7b1f2a', orange:'#f57c00', yellow:'#fbc02d', gold:'#d4a017',
+    green:'#2e9e4f', lime:'#9ccc3c', teal:'#14a3a3', turquoise:'#1fc7c1', aqua:'#2fd3e0',
+    blue:'#1e6fd9', navy:'#1b2a6b', 'light blue':'#64b5f6', 'baby blue':'#90caf9', 'sky blue':'#64b5f6',
+    black:'#222', white:'#f5f5f5', grey:'#9e9e9e', gray:'#9e9e9e', silver:'#c0c0c0',
+    brown:'#795548', tan:'#d2b48c'
+  };
+
+  let state = load();
+  let editingId = null;
+
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY));
+      if (s && Array.isArray(s.swimmers)) return s;
+    } catch (e) {}
+    return { lane: '', pool: '25yd', swimmers: [] };
+  }
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+  function pool() {
+    const m = /^(\d+)(yd|m)$/.exec(state.pool) || [0, 25, 'yd'];
+    return { len: +m[1], unit: m[2] };
+  }
+  const splitLabel = () => { const p = pool(); return `${p.len * 2}${p.unit === 'yd' ? 'yd' : 'm'}`; };
+
+  function fmt(ms) {
+    if (ms == null || !isFinite(ms)) return '–';
+    const t = Math.max(0, Math.round(ms / 100)); // tenths
+    const tenths = t % 10, totalS = Math.floor(t / 10);
+    const h = Math.floor(totalS / 3600), m = Math.floor((totalS % 3600) / 60), s = totalS % 60;
+    if (h) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${m}:${String(s).padStart(2,'0')}.${tenths}`;
+  }
+  function fmtClock(ms) { // no tenths, for running timers
+    if (ms == null) return '–';
+    const totalS = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalS / 3600), m = Math.floor((totalS % 3600) / 60), s = totalS % 60;
+    return h ? `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}` : `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function colorFor(desc) {
+    const d = (desc || '').toLowerCase();
+    const keys = Object.keys(COLORS).sort((a, b) => b.length - a.length);
+    for (const k of keys) if (new RegExp(`\\b${k}\\b`).test(d)) return COLORS[k];
+    return null;
+  }
+
+  function stats(sw) {
+    const n = sw.taps.length;
+    const lengths = n * 2;
+    const dist = lengths * pool().len;
+    let last = null, avg = null;
+    if (n >= 1) {
+      const prev = n >= 2 ? sw.taps[n - 2] : sw.startedAt;
+      last = sw.taps[n - 1] - prev;
+      avg = (sw.taps[n - 1] - sw.startedAt) / n;
+    }
+    const lastMark = n ? sw.taps[n - 1] : sw.startedAt;
+    return { n, lengths, dist, last, avg, lastMark };
+  }
+
+  // ---------- Rendering ----------
+  function render() {
+    const p = pool();
+    $('title').innerHTML = state.lane
+      ? `Lane ${esc(state.lane)}<small>${p.len}${p.unit} pool</small>`
+      : `Lap Counter<small>${p.len}${p.unit} pool</small>`;
+
+    const main = $('main');
+    if (!state.swimmers.length) {
+      main.innerHTML = `
+        <div class="empty">
+          <p style="font-size:44px;margin-bottom:8px">🏊</p>
+          <p><b>Set up your lane</b><br>Add each swimmer you're counting. Tap <b>+</b> every time they touch the wall at your end — that's 2 lengths (${splitLabel()}).</p>
+          <div class="actions" style="max-width:340px;margin:0 auto">
+            <button class="btn primary" id="addFirst">Add a swimmer</button>
+          </div>
+        </div>`;
+      $('addFirst').onclick = () => openSwimmer(null);
+      if (!state.lane) openLane();
+      return;
+    }
+
+    const notStarted = state.swimmers.some(s => !s.startedAt);
+    const totalDist = state.swimmers.reduce((a, s) => a + s.taps.length * 2 * p.len, 0);
+    const sl = splitLabel();
+
+    main.innerHTML = state.swimmers.map(sw => {
+      const st = stats(sw);
+      const c = colorFor(sw.desc);
+      let btn;
+      if (!sw.startedAt) btn = `<button class="big start" data-act="start" data-id="${sw.id}"><span class="plus">Start</span><span class="lbl">clock</span></button>`;
+      else if (sw.finishedAt) btn = `<button class="big finished" data-act="edit" data-id="${sw.id}"><span class="plus">Done</span><span class="lbl">${fmtClock(sw.finishedAt - sw.startedAt)}</span></button>`;
+      else btn = `<button class="big" data-act="tap" data-id="${sw.id}" aria-label="Add 2 lengths for ${esc(sw.name)}"><span class="plus">+</span><span class="lbl">2 lengths</span></button>`;
+
+      return `
+      <div class="card ${sw.finishedAt ? 'done' : ''}">
+        <div class="info">
+          <div class="who">
+            <span class="chip" style="background:${c || 'transparent'};${c ? '' : 'border-style:dashed'}"></span>
+            <span class="name">${esc(sw.name)}</span>
+          </div>
+          <div class="desc">${esc(sw.desc || ' ')}</div>
+          <div class="count"><b>${st.lengths}</b><span>lengths · ${st.dist} ${p.unit}</span></div>
+          <div class="stats">
+            <div class="stat"><div class="k">Last ${sl}</div><div class="v">${fmt(st.last)}</div></div>
+            <div class="stat"><div class="k">Avg ${sl}</div><div class="v">${fmt(st.avg)}</div></div>
+            <div class="stat"><div class="k">${sw.finishedAt ? 'Total' : 'Since last'}</div><div class="v" data-since="${sw.id}">${
+              sw.finishedAt ? fmtClock(sw.finishedAt - sw.startedAt) : (sw.startedAt ? fmtClock(Date.now() - st.lastMark) : '–')
+            }</div></div>
+          </div>
+          <div class="row-tools">
+            ${sw.startedAt && !sw.finishedAt ? `<button class="tool" data-act="undo" data-id="${sw.id}">↶ Undo</button>` : ''}
+            <button class="tool" data-act="edit" data-id="${sw.id}">Edit</button>
+          </div>
+        </div>
+        ${btn}
+      </div>`;
+    }).join('') + `
+      <div class="actions">
+        <button class="btn" id="addBtn">+ Add swimmer</button>
+        ${notStarted && state.swimmers.length > 1 ? `<button class="btn go" id="startAll">Start all</button>` : ''}
+      </div>
+      <p class="total">Lane total: <b>${totalDist.toLocaleString()} ${p.unit}</b></p>`;
+
+    $('addBtn').onclick = () => openSwimmer(null);
+    const sa = $('startAll');
+    if (sa) sa.onclick = () => {
+      const now = Date.now();
+      state.swimmers.forEach(s => { if (!s.startedAt) s.startedAt = now; });
+      save(); buzz(30); render();
+    };
+  }
+
+  // Tick the "since last" timers once a second without re-rendering everything.
+  setInterval(() => {
+    for (const sw of state.swimmers) {
+      if (!sw.startedAt || sw.finishedAt) continue;
+      const el = document.querySelector(`[data-since="${sw.id}"]`);
+      if (el) el.textContent = fmtClock(Date.now() - stats(sw).lastMark);
+    }
+  }, 1000);
+
+  // ---------- Actions ----------
+  $('main').addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (!b) return;
+    const sw = state.swimmers.find(s => s.id === b.dataset.id);
+    if (!sw) return;
+    keepAwake();
+    switch (b.dataset.act) {
+      case 'start':
+        sw.startedAt = Date.now(); save(); buzz(30); render();
+        break;
+      case 'tap': {
+        const now = Date.now();
+        const lastMark = stats(sw).lastMark;
+        if (now - lastMark < MIN_GAP_MS) {
+          toast(`Ignored a double-tap for ${sw.name}`, 'Count it anyway', () => addTap(sw, now));
+          buzz([20, 60, 20]);
+          return;
+        }
+        addTap(sw, now);
+        break;
+      }
+      case 'undo':
+        if (sw.taps.length) {
+          sw.taps.pop();
+          toast(`Removed last 2 lengths for ${sw.name}`);
+        } else {
+          sw.startedAt = null;
+          toast(`${sw.name}'s clock reset`);
+        }
+        save(); render();
+        break;
+      case 'edit':
+        openSwimmer(sw.id);
+        break;
+    }
+  });
+
+  function addTap(sw, t) {
+    sw.taps.push(t);
+    save(); buzz(25); render();
+    const btn = document.querySelector(`[data-act="tap"][data-id="${sw.id}"]`);
+    if (btn) btn.classList.add('flash');
+  }
+
+  // ---------- Swimmer sheet ----------
+  function openSwimmer(id) {
+    editingId = id;
+    const sw = id ? state.swimmers.find(s => s.id === id) : null;
+    $('swTitle').textContent = sw ? 'Edit swimmer' : 'Add swimmer';
+    $('swName').value = sw ? sw.name : '';
+    $('swDesc').value = sw ? sw.desc : '';
+    const extra = $('swExtra');
+    if (sw) {
+      const st = stats(sw);
+      const sl = splitLabel();
+      let splitsHtml = '';
+      if (st.n) {
+        const items = sw.taps.map((t, i) => {
+          const prev = i ? sw.taps[i - 1] : sw.startedAt;
+          return `<li><span>#${i + 1}</span>${fmt(t - prev)}</li>`;
+        }).join('');
+        splitsHtml = `<div class="field"><label>${sl} splits</label><ol class="splits">${items}</ol></div>`;
+      }
+      extra.innerHTML = `
+        ${splitsHtml}
+        <div class="actions">
+          ${sw.startedAt && !sw.finishedAt ? `<button class="btn" id="swFinish">Finished swimming</button>` : ''}
+          ${sw.finishedAt ? `<button class="btn" id="swResume">Resume counting</button>` : ''}
+          <button class="btn danger" id="swRemove">Remove swimmer</button>
+        </div>`;
+      const f = $('swFinish');
+      if (f) f.onclick = () => { sw.finishedAt = stats(sw).lastMark; save(); closeSheets(); render(); };
+      const r = $('swResume');
+      if (r) r.onclick = () => { sw.finishedAt = null; save(); closeSheets(); render(); };
+      $('swRemove').onclick = () => {
+        if (st.n && !confirm(`Remove ${sw.name}? Their ${st.lengths} lengths will be lost.`)) return;
+        state.swimmers = state.swimmers.filter(s => s.id !== sw.id);
+        save(); closeSheets(); render();
+      };
+    } else {
+      extra.innerHTML = '';
+    }
+    $('swimmerSheet').classList.add('open');
+    setTimeout(() => $('swName').focus(), 50);
+  }
+
+  $('swSave').onclick = () => {
+    const name = $('swName').value.trim();
+    const desc = $('swDesc').value.trim();
+    if (!name) { $('swName').focus(); return; }
+    if (editingId) {
+      const sw = state.swimmers.find(s => s.id === editingId);
+      if (sw) { sw.name = name; sw.desc = desc; }
+    } else {
+      state.swimmers.push({ id: Math.random().toString(36).slice(2, 9), name, desc, startedAt: null, finishedAt: null, taps: [] });
+    }
+    save(); closeSheets(); render();
+  };
+  ['swName', 'swDesc'].forEach(id => $(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); id === 'swName' ? $('swDesc').focus() : $('swSave').click(); }
+  }));
+
+  // ---------- Lane sheet ----------
+  function openLane() {
+    $('laneName').value = state.lane;
+    $('poolLen').value = state.pool;
+    $('laneSheet').classList.add('open');
+  }
+  $('menuBtn').onclick = openLane;
+  $('laneSave').onclick = () => {
+    state.lane = $('laneName').value.trim();
+    state.pool = $('poolLen').value;
+    save(); closeSheets(); render();
+  };
+  $('laneName').addEventListener('keydown', e => { if (e.key === 'Enter') $('laneSave').click(); });
+
+  $('resetCounts').onclick = () => {
+    if (!confirm('Reset every swimmer\'s lengths and clock? Names stay. This can\'t be undone.')) return;
+    state.swimmers.forEach(s => { s.taps = []; s.startedAt = null; s.finishedAt = null; });
+    save(); closeSheets(); render();
+  };
+  $('resetAll').onclick = () => {
+    if (!confirm('Remove all swimmers and counts from this lane? This can\'t be undone.')) return;
+    state.swimmers = [];
+    save(); closeSheets(); render();
+  };
+
+  $('shareBtn').onclick = async () => {
+    const p = pool(), sl = splitLabel();
+    const lines = [`Swimathon — ${state.lane ? 'Lane ' + state.lane : 'Lap count'} (${p.len}${p.unit} pool)`];
+    for (const sw of state.swimmers) {
+      const st = stats(sw);
+      lines.push(`${sw.name}${sw.desc ? ' (' + sw.desc + ')' : ''}: ${st.lengths} lengths = ${st.dist} ${p.unit}${st.avg ? `, avg ${sl} ${fmt(st.avg)}` : ''}`);
+    }
+    const total = state.swimmers.reduce((a, s) => a + s.taps.length * 2 * p.len, 0);
+    lines.push(`Lane total: ${total} ${p.unit}`);
+    const text = lines.join('\n');
+    try {
+      if (navigator.share) { await navigator.share({ text }); return; }
+    } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text); toast('Results copied — paste into a text'); }
+    catch (e) { prompt('Copy these results:', text); }
+  };
+
+  // ---------- Sheet plumbing ----------
+  function closeSheets() { document.querySelectorAll('.sheet-bg').forEach(s => s.classList.remove('open')); }
+  document.querySelectorAll('.sheet-bg').forEach(bg => bg.addEventListener('click', e => {
+    if (e.target === bg || e.target.hasAttribute('data-close')) closeSheets();
+  }));
+
+  // ---------- Toast ----------
+  let toastTimer;
+  function toast(msg, actionLabel, action) {
+    const t = $('toast');
+    t.innerHTML = esc(msg) + (actionLabel ? `<button>${esc(actionLabel)}</button>` : '');
+    if (actionLabel) t.querySelector('button').onclick = () => { t.classList.remove('show'); action(); };
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), actionLabel ? 4500 : 2200);
+  }
+
+  // ---------- Phone niceties ----------
+  function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+  let wakeLock = null;
+  async function keepAwake() {
+    try {
+      if ('wakeLock' in navigator && !wakeLock) {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { keepAwake(); render(); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "Swimathon Lap Counter",
+  "short_name": "Lap Counter",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#eef4f8",
+  "theme_color": "#0b3d5c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
